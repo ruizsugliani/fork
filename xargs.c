@@ -9,14 +9,18 @@
 #define NARGS 4
 #endif
 
+#ifndef INICIO_ARGS
+#define INICIO_ARGS 1
+#endif
+
 int
-Execute(char *comando, char *args[])
+Execute(char *args[])
 {
 	int pid = fork();
 
 	if (pid == 0) {
 		// Caso del hijo.
-		execvp(comando, args);
+		execvp(args[0], args);
 		printf("Error en execvp.\n");
 		return (EXIT_FAILURE);
 	} else if (pid > 0) {
@@ -26,8 +30,8 @@ Execute(char *comando, char *args[])
 		printf("Error en el fork.\n");
 		return (EXIT_FAILURE);
 	}
-	
-	return(EXIT_SUCCESS);
+
+	return (EXIT_SUCCESS);
 }
 
 void
@@ -39,31 +43,31 @@ Xargs(char *comando)
 	ssize_t nread;
 
 	// Por convencion, el primer argumento apunta al nombre del archivo por ejecutar y el último a NULL.
-	char *args[NARGS + 1];
+	char *args[NARGS + 2];
 	args[0] = comando;
-	size_t count = 1;
+	size_t count = INICIO_ARGS;
 
 	while ((nread = getline(&line, &len, stdin)) != EOF) {
 		line[nread - 1] = '\0';
 		args[count] = strdup(line);
 		count++;
 
-		if (count == NARGS + 1 ) {
+		if (count == NARGS + 1) {
 			// Estamos listos para ejecutar el comando.
-			args[count] = NULL;
-			Execute(comando, args);
+			args[NARGS + 1] = NULL;
+			Execute(args);
 
 			// Liberamos memoria alocada por getline.
-			for (size_t i = 1; i < count; i++) {
+			for (size_t i = INICIO_ARGS; i < NARGS + 1; i++) {
 				free(args[i]);
 			}
 
 			// Limpiamos el arreglo de char *.
-			for (size_t i = 1; i < count; i++) {
+			for (size_t i = INICIO_ARGS; i < NARGS + 1; i++) {
 				args[i] = NULL;
 			}
 
-			count = 1;
+			count = INICIO_ARGS;
 		}
 
 		// Dejamos listo para la próxima iteración.
@@ -73,14 +77,13 @@ Xargs(char *comando)
 	}
 
 	// Ejecutamos lo que haya quedado en el buffer.
-    if (count > 1) {  // Si hay elementos pendientes
-        args[count] = NULL;
-        Execute(comando, args);
-        for (size_t i = 1; i < count; i++) {
-            free(args[i]);
-        }
-    }
-
+	if (count > 1) {  // Si hay elementos pendientes
+		args[count] = NULL;
+		Execute(args);
+		for (size_t i = INICIO_ARGS; i < NARGS + 1; i++) {
+			free(args[i]);
+		}
+	}
 }
 
 int
