@@ -22,19 +22,19 @@ Execute(char *args[])
 		// Caso del hijo.
 		execvp(args[0], args);
 		printf("Error en execvp.\n");
-		return (EXIT_FAILURE);
+		return EXIT_FAILURE;
 	} else if (pid > 0) {
 		// Caso del padre.
 		wait(NULL);
 	} else {
 		printf("Error en el fork.\n");
-		return (EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
-	return (EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 
-void
+int
 Xargs(char *comando)
 {
 	// Parámetros utilizados en getline.
@@ -49,7 +49,14 @@ Xargs(char *comando)
 
 	while ((nread = getline(&line, &len, stdin)) != EOF) {
 		line[nread - 1] = '\0';
-		args[count] = strdup(line);
+		char *copy = strdup(line);
+
+		if (copy == NULL) {
+			printf("Error al copiar linea ingresada por stdin.\n");
+			return EXIT_FAILURE;
+		}
+
+		args[count] = copy;
 		count++;
 
 		if (count == NARGS + 1) {
@@ -84,6 +91,8 @@ Xargs(char *comando)
 			free(args[i]);
 		}
 	}
+
+	return EXIT_SUCCESS;
 }
 
 int
